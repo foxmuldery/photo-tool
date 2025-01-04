@@ -32,7 +32,7 @@
         .app-content {
             max-width: 500px;
             margin: 0 auto;
-            padding: 16px 16px 80px;
+            padding: 12px 12px 80px;
         }
 
         body {
@@ -51,7 +51,7 @@
             background: #f8f8f8;
             border-radius: 12px;
             overflow: hidden;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             border: 1px solid #eee;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
@@ -110,8 +110,8 @@
         .section {
             background: #f5f5f5;
             border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
+            padding: 12px;
+            margin-bottom: 8px;
         }
 
         .section-title {
@@ -150,7 +150,7 @@
         .text-panel {
             display: grid;
             grid-template-columns: 2fr 1fr;
-            gap: 12px;
+            gap: 6px;
         }
 
         .text-input {
@@ -180,7 +180,7 @@
             height: 36px;
             border: 1px solid #eee;
             border-radius: 8px;
-            padding: 0 8px;
+            padding: 8px;
             background: white;
             font-size: 14px;
         }
@@ -213,7 +213,7 @@
             gap: 8px;
             overflow-x: auto;
             padding: 4px 0;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             scrollbar-width: none;
             min-height: 50px;
         }
@@ -336,6 +336,81 @@
             display: none;
             z-index: 1000;
         }
+         /* 移动端适配样式 */
+    @media screen and (max-width: 480px) {
+        /* 控制区域样式优化 */
+        #photoDescription {
+        font-size: 14px;
+        padding: 6px;
+    }
+        select {
+            font-size: 12px;
+            height: 32px;
+            padding: 0 6px;
+            min-height: 36px; /* 确保足够的点击区域 */
+        }
+        
+        select option {
+            font-size: 12px;
+            padding: 4px 6px;
+        }
+        
+        .layout-btn {
+            font-size: 14px;
+            height: 32px;
+        }
+        
+        /* 间距优化 */
+        .section {
+            padding: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .text-panel {
+            gap: 6px;
+        }
+        
+        textarea {
+            padding: 8px;
+            min-height: 72px;
+            font-size: 14px;
+        }
+        
+        /* 浮动按钮优化 */
+        .floating-btn {
+            width: 48px;
+            height: 48px;
+            font-size: 18px;
+        }
+        
+        /* 缩略图优化 */
+        .thumbnails {
+            gap: 6px;
+            min-height: 40px;
+        }
+        
+        .thumbnail {
+            height: 40px;
+            width: 40px;
+        }
+        
+        /* 导航按钮优化 */
+        .nav-btn {
+            width: 36px;
+            height: 36px;
+            font-size: 14px;
+        }
+        
+        /* 页脚文字优化 */
+        .footer {
+            padding: 16px 0;
+        }
+        
+        .footer-text {
+            gap: 8px;
+            font-size: 11px;
+        }
+    }
     </style>
 </head>
 <body>
@@ -353,9 +428,7 @@
 
             
             <div class="section">
-                <div class="section">
-                    <div class="section-title">文字设置</div>
-                    <div class="text-panel">
+                <div class="text-panel">
                         <div class="text-input">
                             <textarea id="photoDescription" placeholder="添加描述..."></textarea>
                         </div>
@@ -363,9 +436,9 @@
                         <div class="text-controls">
                              <!-- 添加边框宽度选择 -->
                              <select id="borderWidth">
-                                <option value="5">窄边框(5%)</option>
-                                <option value="12">适中(12%)</option>
-                                <option value="20">宽边框(20%)</option>
+                                <option value="5">窄(5%)</option>
+                                <option value="12">中(12%)</option>
+                                <option value="25">宽(25%)</option>
                             </select>
                             <select id="fontFamily">
                                 <option value="LXGW WenKai">霞鹜文楷</option>
@@ -375,9 +448,9 @@
                                 <option value="Ma Shan Zheng">马善政楷书</option>
                             </select>                                            
                             <select id="fontSize">
-                                <option value="16">小字(16px)</option>
-                                <option value="24">中字(24px)</option>
-                                <option value="32">大字(32px)</option>
+                                <option value="16">小(16px)</option>
+                                <option value="24">中(24px)</option>
+                                <option value="32">大(32px)</option>
                             </select>
                         </div>
                 
@@ -403,7 +476,7 @@
                     <span>|</span>
                     <span>小红书：老y的影像记录</span>
                     <span>|</span>
-                    <span>版本：1.2</span>
+                    <span>版本：1.3</span>
                 </div>
             </div>
         </div>
