@@ -1,4 +1,598 @@
-function updatePreview(isPreview = true) {
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- 添加所有需要的字体链接 -->
+    <link rel="stylesheet" href="https://npm.elemecdn.com/lxgw-wenkai-webfont@1.1.0/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Long+Cang&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap">
+    <title>老y照片边框生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .app-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #fff;
+            z-index: 9999;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .app-content {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 12px 12px 80px;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #fff;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        /* 预览区域 */
+        .preview-container {
+            width: 100%;
+            padding-bottom: 100%;
+            position: relative;
+            background: #f8f8f8;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            border: 1px solid #eee;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        #previewArea {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        #previewArea canvas {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 导航按钮 */
+        .nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            border: none;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .nav-btn.prev {
+            left: 16px;
+        }
+
+        .nav-btn.next {
+            right: 16px;
+        }
+
+        .nav-btn.nav-hidden {
+            display: none;
+        }
+
+        /* 控制区块样式 */
+        .section {
+            background: #f5f5f5;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        /* 边框控制 */
+        input[type="range"] {
+            width: 100%;
+            height: 24px;
+            margin: 8px 0;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #4361ee;
+            cursor: pointer;
+            margin-top: -8px;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: #ddd;
+            border-radius: 2px;
+        }
+
+        /* 文字设置面板 */
+        .text-panel {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 6px;
+        }
+
+        .text-input {
+            grid-row: span 2;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            padding: 12px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: none;
+            background: white;
+            min-height: 84px;
+        }
+
+        .text-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        select {
+            width: 100%;
+            height: 36px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 8px;
+            background: white;
+            font-size: 14px;
+        }
+
+        /* 排版按钮 */
+        .layout-btns {
+            display: flex;
+            gap: 8px;
+            height: 36px;
+        }
+
+        .layout-btn {
+            flex: 1;
+            border: 1px solid #eee;
+            background: white;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .layout-btn.active {
+            background: #4361ee;
+            color: white;
+            border-color: #4361ee;
+        }
+
+        /* 缩略图 */
+        .thumbnails {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 4px 0;
+            margin-bottom: 12px;
+            scrollbar-width: none;
+            min-height: 50px;
+        }
+
+        .thumbnails::-webkit-scrollbar {
+            display: none;
+        }
+
+        .thumbnail {
+            height: 50px;
+            width: 50px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+
+        .thumbnail.active {
+            border-color: #4361ee;
+        }
+
+        /* 浮动操作按钮 */
+        .floating-actions {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            padding: 0 20px;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .floating-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            background: #4361ee;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.4);
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .floating-btn:active {
+            transform: scale(0.95);
+        }
+
+        .floating-btn.secondary {
+            background: #666;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 页脚信息 */
+        .footer {
+            text-align: center;
+            padding: 20px 0;
+            color: #666;
+            font-size: 12px;
+            margin-top: 32px;
+        }
+
+        .footer-text {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        /* 加载状态 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4361ee;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 提示消息 */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: none;
+            z-index: 1000;
+        }
+         /* 移动端适配样式 */
+    @media screen and (max-width: 480px) {
+        /* 控制区域样式优化 */
+        #photoDescription {
+        font-size: 14px;
+        padding: 6px;
+    }
+        select {
+            font-size: 12px;
+            height: 32px;
+            padding: 0 6px;
+            min-height: 36px; /* 确保足够的点击区域 */
+        }
+        
+        select option {
+            font-size: 12px;
+            padding: 4px 6px;
+        }
+        
+        .layout-btn {
+            font-size: 14px;
+            height: 32px;
+        }
+        
+        /* 间距优化 */
+        .section {
+            padding: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .text-panel {
+            gap: 6px;
+        }
+        
+        textarea {
+            padding: 8px;
+            min-height: 72px;
+            font-size: 14px;
+        }
+        
+        /* 浮动按钮优化 */
+        .floating-btn {
+            width: 48px;
+            height: 48px;
+            font-size: 18px;
+        }
+        
+        /* 缩略图优化 */
+        .thumbnails {
+            gap: 6px;
+            min-height: 40px;
+        }
+        
+        .thumbnail {
+            height: 40px;
+            width: 40px;
+        }
+        
+        /* 导航按钮优化 */
+        .nav-btn {
+            width: 36px;
+            height: 36px;
+            font-size: 14px;
+        }
+        
+        /* 页脚文字优化 */
+        .footer {
+            padding: 16px 0;
+        }
+        
+        .footer-text {
+            gap: 8px;
+            font-size: 11px;
+        }
+    }
+    </style>
+</head> 
+<body></body>
+    <div class="app-container">
+        <div class="app-content">
+            <div class="preview-container">
+                <div id="previewArea">
+                    <canvas id="previewCanvas"></canvas>
+                </div>
+                <button class="nav-btn preview-nav prev">◀</button>
+                <button class="nav-btn preview-nav next">▶</button>
+            </div>
+
+            <div class="thumbnails" id="thumbnailContainer"></div>
+
+            
+            <div class="section">
+                <div class="text-panel">
+                        <div class="text-input">
+                            <textarea id="photoDescription" placeholder="添加描述..."></textarea>
+                        </div>
+                        
+                        <div class="text-controls">
+                             <!-- 添加边框宽度选择 -->
+                             <select id="borderWidth">
+                                <option value="5">窄(5%)</option>
+                                <option value="12">中(12%)</option>
+                                <option value="25">宽(25%)</option>
+                            </select>
+                            <select id="fontFamily">
+                                <option value="LXGW WenKai">霞鹜文楷</option>
+                                <option value="Noto Sans SC">思源黑体</option>
+                                <option value="Noto Serif SC">思源宋体</option>
+                                <option value="Long Cang">长仓体</option>
+                                <option value="Ma Shan Zheng">马善政楷书</option>
+                            </select>                                            
+                            <select id="fontSize">
+                                <option value="16">小(16px)</option>
+                                <option value="24">中(24px)</option>
+                                <option value="32">大(32px)</option>
+                            </select>
+                        </div>
+                
+                        <div class="layout-btns">
+                            <button class="layout-btn align-btn" data-align="left">⇦</button>
+                            <button class="layout-btn align-btn active" data-align="center">☰</button>
+                            <button class="layout-btn align-btn" data-align="right">⇨</button>
+                        </div>
+                    </div>
+                </div>
+
+            <div class="floating-actions">
+                <button class="floating-btn" onclick="document.getElementById('imageInput').click()">+</button>
+                <button class="floating-btn secondary" id="downloadCurrent">↓</button>
+                <button class="floating-btn secondary" id="downloadAll">⇓</button>
+            </div>
+
+            <input type="file" id="imageInput" accept="image/*" multiple>
+
+            <div class="footer">
+                <div class="footer-text">
+                    <span>开发者：老y</span>
+                    <span>|</span>
+                    <span>小红书：老y的影像记录</span>
+                    <span>|</span>
+                    <span>版本：1.32</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+    <div class="toast" id="toast"></div>
+
+<script>
+    // 全局变量
+    let currentImageIndex = 0;
+    let images = [];
+    let textAlign = 'center';
+    let originalFileNames = [];
+    
+    // 加载字体
+    const loadFonts = async () => {
+        showLoading();
+        try {
+            await Promise.all([
+                document.fonts.load('10px "LXGW WenKai"'),
+                document.fonts.load('10px "Noto Sans SC"'),
+                document.fonts.load('10px "Noto Serif SC"'),
+                document.fonts.load('10px "Long Cang"'),
+                document.fonts.load('10px "Ma Shan Zheng"')
+            ]);
+            console.log('所有字体加载完成');
+            showToast('字体加载完成');
+        } catch (error) {
+            console.error('字体加载错误:', error);
+            showToast('部分字体可能加载失败，将使用系统字体');
+        } finally {
+            hideLoading();
+        }
+    };
+
+    // DOM 元素
+    const canvas = document.getElementById('previewCanvas');
+    const ctx = canvas.getContext('2d');
+    const imageInput = document.getElementById('imageInput');
+    const downloadCurrentBtn = document.getElementById('downloadCurrent');
+    const downloadAllBtn = document.getElementById('downloadAll');
+    const photoDescription = document.getElementById('photoDescription');
+    const fontFamilySelect = document.getElementById('fontFamily');
+    const fontSizeSelect = document.getElementById('fontSize');
+    const thumbnailContainer = document.getElementById('thumbnailContainer');
+    const prevButton = document.querySelector('.nav-btn.prev');
+    const nextButton = document.querySelector('.nav-btn.next');
+    const loadingOverlay = document.querySelector('.loading-overlay');
+
+    // 高质量图片加载函数
+    function loadImageWithQuality(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    // 创建临时canvas保持原始质量
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = img.naturalWidth;
+                    tempCanvas.height = img.naturalHeight;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCtx.drawImage(img, 0, 0);
+                    
+                    // 使用高质量图片数据
+                    const highQualityImg = new Image();
+                    highQualityImg.onload = () => resolve(highQualityImg);
+                    highQualityImg.src = tempCanvas.toDataURL('image/png', 1.0);
+                };
+                img.onerror = reject;
+                img.src = e.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // 处理图片上传
+    async function handleImageUpload(event) {
+        const files = event.target.files;
+        if (files.length === 0) return;
+
+        showLoading();
+        images = [];
+        originalFileNames = [];
+        thumbnailContainer.innerHTML = '';
+        
+        try {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const image = await loadImageWithQuality(file);
+                images.push(image);
+                originalFileNames.push(file.name.replace(/\.[^/.]+$/, ''));
+                createThumbnail(image, i);
+            }
+
+            if (images.length > 0) {
+                currentImageIndex = 0;
+                updatePreview();
+                updateNavigationButtons();
+                showToast(`已成功加载 ${images.length} 张图片`);
+            }
+        } catch (error) {
+            console.error('Error loading images:', error);
+            showToast('加载图片时出现错误');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    // 更新预览函数
+  // 修改 updatePreview 函数
+
+  function updatePreview(isPreview = true) {
     if (images.length === 0) return;
 
     const img = images[currentImageIndex];
@@ -85,3 +679,235 @@ function updatePreview(isPreview = true) {
         canvas.style.width = (previewHeight * canvasRatio) + 'px';
     }
 }
+
+    function drawText(ctx, text, x, y, maxWidth) {
+        const lines = text.split('\n');
+        const fontSize = parseInt(fontSizeSelect.value);
+        const lineHeight = fontSize * 1.5;
+        
+        lines.forEach((line, index) => {
+            let xPos = x;
+            const metrics = ctx.measureText(line);
+            
+            if (textAlign === 'center') {
+                xPos = x + (maxWidth - metrics.width) / 2;
+            } else if (textAlign === 'right') {
+                xPos = x + maxWidth - metrics.width;
+            }
+            
+            ctx.fillText(line, xPos, y + (index * lineHeight));
+        });
+    }
+
+    // 创建缩略图
+    function createThumbnail(image, index) {
+        const thumbnail = document.createElement('img');
+        thumbnail.classList.add('thumbnail');
+        thumbnail.src = image.src;
+        if (index === 0) thumbnail.classList.add('active');
+        
+        thumbnail.addEventListener('click', () => {
+            document.querySelectorAll('.thumbnail').forEach(thumb => thumb.classList.remove('active'));
+            thumbnail.classList.add('active');
+            currentImageIndex = index;
+            updatePreview();
+            updateNavigationButtons();
+        });
+        
+        thumbnailContainer.appendChild(thumbnail);
+    }
+
+    // 导航函数
+    function showPreviousImage() {
+        if (currentImageIndex > 0) {
+            currentImageIndex--;
+            updateThumbnailSelection();
+            updatePreview();
+            updateNavigationButtons();
+        }
+    }
+
+    function showNextImage() {
+        if (currentImageIndex < images.length - 1) {
+            currentImageIndex++;
+            updateThumbnailSelection();
+            updatePreview();
+            updateNavigationButtons();
+        }
+    }
+
+    function updateThumbnailSelection() {
+        document.querySelectorAll('.thumbnail').forEach((thumb, index) => {
+            thumb.classList.toggle('active', index === currentImageIndex);
+        });
+    }
+
+    function updateNavigationButtons() {
+        prevButton.style.display = currentImageIndex === 0 ? 'none' : 'flex';
+        nextButton.style.display = currentImageIndex === images.length - 1 ? 'none' : 'flex';
+    }
+
+    // 下载功能
+// 修改 downloadCurrent 函数
+function downloadCurrent() {
+    if (images.length === 0) {
+        showToast('请先添加图片');
+        return;
+    }
+    
+    showLoading();
+    setTimeout(() => {
+        try {
+            const img = images[currentImageIndex];
+            // 保存当前 canvas 尺寸
+            const originalWidth = canvas.width;
+            const originalHeight = canvas.height;
+            
+            // 设置 canvas 为原始图片尺寸
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            
+            // 使用原始尺寸渲染
+            updatePreview(false);
+            
+            const link = document.createElement('a');
+            const fileName = originalFileNames[currentImageIndex] || `photo_${currentImageIndex + 1}`;
+            link.download = `${fileName}_y.jpg`;
+            
+            // 使用较低质量设置来减小文件大小
+            link.href = canvas.toDataURL('image/jpeg', 1);
+            link.click();
+            
+            // 恢复预览尺寸
+            canvas.width = originalWidth;
+            canvas.height = originalHeight;
+            updatePreview(true);
+            
+            showToast('已下载当前图片');
+        } catch (error) {
+            console.error('Error downloading image:', error);
+            showToast('下载图片时出现错误');
+        } finally {
+            hideLoading();
+        }
+    }, 100);
+}
+// 修改 downloadAll 函数
+async function downloadAll() {
+    if (images.length === 0) {
+        showToast('请先添加图片');
+        return;
+    }
+
+    showLoading();
+    const currentIdx = currentImageIndex;
+    
+    try {
+        for (let i = 0; i < images.length; i++) {
+            currentImageIndex = i;
+            // 使用原始尺寸渲染
+            updatePreview(false);
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const link = document.createElement('a');
+            const fileName = originalFileNames[i] || `photo_${i + 1}`;
+            link.download = `${fileName}_y.jpg`;
+            // 使用最高质量导出
+            link.href = canvas.toDataURL('image/jpg', 1);
+            link.click();
+        }
+        showToast(`已下载 ${images.length} 张图片`);
+    } catch (error) {
+        console.error('Error downloading images:', error);
+        showToast('下载过程中出现错误');
+    } finally {
+        currentImageIndex = currentIdx;
+        // 恢复预览尺寸
+        updatePreview(true);
+        hideLoading();
+    }
+}
+
+    // 修改 downloadAll 函数
+async function downloadAll() {
+    if (images.length === 0) {
+        showToast('请先添加图片');
+        return;
+    }
+
+    showLoading();
+    const currentIdx = currentImageIndex;
+    
+    try {
+        for (let i = 0; i < images.length; i++) {
+            currentImageIndex = i;
+            // 使用原始尺寸渲染
+            updatePreview(false);
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const link = document.createElement('a');
+            const fileName = originalFileNames[i] || `photo_${i + 1}`;
+            link.download = `${fileName}_y.png`;
+            // 使用最高质量导出
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+        }
+        showToast(`已下载 ${images.length} 张图片`);
+    } catch (error) {
+        console.error('Error downloading images:', error);
+        showToast('下载过程中出现错误');
+    } finally {
+        currentImageIndex = currentIdx;
+        // 恢复预览尺寸
+        updatePreview(true);
+        hideLoading();
+    }
+}
+
+    // 工具函数
+    function showLoading() {
+        loadingOverlay.style.display = 'flex';
+    }
+
+    function hideLoading() {
+        loadingOverlay.style.display = 'none';
+    }
+
+    function showToast(message, duration = 2000) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.style.display = 'block';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, duration);
+    }
+
+    // 事件监听器
+    imageInput.addEventListener('change', handleImageUpload);
+    downloadCurrentBtn.addEventListener('click', downloadCurrent);
+    downloadAllBtn.addEventListener('click', downloadAll);
+    photoDescription.addEventListener('input', updatePreview);
+    fontFamilySelect.addEventListener('change', function() {
+        setTimeout(updatePreview, 50);
+    });
+    fontSizeSelect.addEventListener('change', updatePreview);
+    document.getElementById('borderWidth').addEventListener('change', updatePreview);
+
+    // 对齐按钮事件监听
+    document.querySelectorAll('.align-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.align-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            textAlign = this.dataset.align;
+            updatePreview();
+        });
+    });
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+        loadFonts();
+        updateNavigationButtons();
+    });
+</script>
+</body>
+</html>
