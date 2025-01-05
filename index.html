@@ -412,8 +412,8 @@
         }
     }
     </style>
-</head>
-<body>
+</head> 
+<body></body>
     <div class="app-container">
         <div class="app-content">
             <div class="preview-container">
@@ -476,7 +476,7 @@
                     <span>|</span>
                     <span>小红书：老y的影像记录</span>
                     <span>|</span>
-                    <span>版本：1.3</span>
+                    <span>版本：1.31</span>
                 </div>
             </div>
         </div>
@@ -491,19 +491,19 @@
     // 全局变量
     let currentImageIndex = 0;
     let images = [];
-    let textAlign = 'center'; // 默认居中对齐
+    let textAlign = 'center';
     let originalFileNames = [];
     
-    // 修改字体加载函数
+    // 加载字体
     const loadFonts = async () => {
         showLoading();
         try {
             await Promise.all([
-                document.fonts.load(`10px "LXGW WenKai"`),
-                document.fonts.load(`10px "Noto Sans SC"`),
-                document.fonts.load(`10px "Noto Serif SC"`),
-                document.fonts.load(`10px "Long Cang"`),
-                document.fonts.load(`10px "Ma Shan Zheng"`)
+                document.fonts.load('10px "LXGW WenKai"'),
+                document.fonts.load('10px "Noto Sans SC"'),
+                document.fonts.load('10px "Noto Serif SC"'),
+                document.fonts.load('10px "Long Cang"'),
+                document.fonts.load('10px "Ma Shan Zheng"')
             ]);
             console.log('所有字体加载完成');
             showToast('字体加载完成');
@@ -521,7 +521,6 @@
     const imageInput = document.getElementById('imageInput');
     const downloadCurrentBtn = document.getElementById('downloadCurrent');
     const downloadAllBtn = document.getElementById('downloadAll');
-    const borderWidthSlider = document.getElementById('borderWidth');
     const photoDescription = document.getElementById('photoDescription');
     const fontFamilySelect = document.getElementById('fontFamily');
     const fontSizeSelect = document.getElementById('fontSize');
@@ -529,56 +528,39 @@
     const prevButton = document.querySelector('.nav-btn.prev');
     const nextButton = document.querySelector('.nav-btn.next');
     const loadingOverlay = document.querySelector('.loading-overlay');
-    
-    // 事件监听器设置
-    imageInput.addEventListener('change', handleImageUpload);
-    downloadCurrentBtn.addEventListener('click', downloadCurrent);
-    downloadAllBtn.addEventListener('click', downloadAll);
-    photoDescription.addEventListener('input', updatePreview);
-    fontFamilySelect.addEventListener('change', function() {
-        setTimeout(updatePreview, 50); // 50ms延迟确保字体加载
-    });
-    fontSizeSelect.addEventListener('change', updatePreview);
-    prevButton.addEventListener('click', showPreviousImage);
-    nextButton.addEventListener('click', showNextImage);
 
-    document.getElementById('borderWidth').addEventListener('change', updatePreview);
-
-
-    // 对齐按钮事件监听
-    document.querySelectorAll('.align-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.align-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            textAlign = this.dataset.align;
-            updatePreview();
+    // 高质量图片加载函数
+    function loadImageWithQuality(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    // 创建临时canvas保持原始质量
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = img.naturalWidth;
+                    tempCanvas.height = img.naturalHeight;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCtx.drawImage(img, 0, 0);
+                    
+                    // 使用高质量图片数据
+                    const highQualityImg = new Image();
+                    highQualityImg.onload = () => resolve(highQualityImg);
+                    highQualityImg.src = tempCanvas.toDataURL('image/png', 1.0);
+                };
+                img.onerror = reject;
+                img.src = e.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
         });
-    });
-    
-    // 显示/隐藏加载状态
-    function showLoading() {
-        loadingOverlay.style.display = 'flex';
     }
-    
-    function hideLoading() {
-        loadingOverlay.style.display = 'none';
-    }
-    
-    // 显示提示消息
-    function showToast(message, duration = 2000) {
-        const toast = document.getElementById('toast');
-        toast.textContent = message;
-        toast.style.display = 'block';
-        setTimeout(() => {
-            toast.style.display = 'none';
-        }, duration);
-    }
-    
+
     // 处理图片上传
     async function handleImageUpload(event) {
         const files = event.target.files;
         if (files.length === 0) return;
-    
+
         showLoading();
         images = [];
         originalFileNames = [];
@@ -587,12 +569,12 @@
         try {
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                const image = await loadImage(file);
+                const image = await loadImageWithQuality(file);
                 images.push(image);
                 originalFileNames.push(file.name.replace(/\.[^/.]+$/, ''));
                 createThumbnail(image, i);
             }
-    
+
             if (images.length > 0) {
                 currentImageIndex = 0;
                 updatePreview();
@@ -606,62 +588,28 @@
             hideLoading();
         }
     }
-    
-    // 加载图片
-    function loadImage(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => resolve(img);
-                img.onerror = reject;
-                img.src = e.target.result;
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    }
-    
-    // 创建缩略图
-    function createThumbnail(image, index) {
-        const thumbnail = document.createElement('img');
-        thumbnail.classList.add('thumbnail');
-        thumbnail.src = image.src;
-        if (index === 0) thumbnail.classList.add('active');
-        
-        thumbnail.addEventListener('click', () => {
-            document.querySelectorAll('.thumbnail').forEach(thumb => thumb.classList.remove('active'));
-            thumbnail.classList.add('active');
-            currentImageIndex = index;
-            updatePreview();
-            updateNavigationButtons();
-        });
-        
-        thumbnailContainer.appendChild(thumbnail);
-    }
-    
+
     // 更新预览函数
     function updatePreview() {
         if (images.length === 0) return;
-    
+
         const img = images[currentImageIndex];
         const borderWidth = parseInt(document.getElementById('borderWidth').value) / 100;
-        const strokeWidth = 2; // 固定2像素灰色描边
-        
-        // 获取文本内容并计算所需的额外边框高度
+        const strokeWidth = 2;
+
         const description = photoDescription.value.trim();
         const fontSize = parseInt(document.getElementById('fontSize').value);
         const lineHeight = fontSize * 1.5;
         const lines = description.split('\n');
         const textHeight = lines.length * lineHeight;
-        
-        // 计算基础图像尺寸
-        const maxWidth = Math.min(window.innerWidth * 0.9, 1200);
-        const maxHeight = Math.min(window.innerHeight * 0.6, 1200);
-        
+
+        // 使用更大的最大尺寸
+        const maxWidth = Math.min(window.innerWidth * 0.9, 2400);
+        const maxHeight = Math.min(window.innerHeight * 0.6, 2400);
+
         let imageWidth, imageHeight;
-        const imgRatio = img.width / img.height;
-        
+        const imgRatio = img.naturalWidth / img.naturalHeight;
+
         if (imgRatio > maxWidth / maxHeight) {
             imageWidth = maxWidth;
             imageHeight = imageWidth / imgRatio;
@@ -669,129 +617,44 @@
             imageHeight = maxHeight;
             imageWidth = imageHeight * imgRatio;
         }
-        
-        // 计算边框尺寸
+
         const borderSize = imageWidth * borderWidth;
-        
-        // 设置画布尺寸（包含文本区域）
         const canvasWidth = imageWidth + (borderSize * 2);
         const canvasHeight = imageHeight + (borderSize * 2) + (description ? textHeight + borderSize : 0);
-        
+
         canvas.width = canvasWidth;
         canvas.height = canvasHeight;
-        
-        // 绘制白色背景
+
+        // 启用高质量图像渲染
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-        
-        // 绘制图像
         ctx.drawImage(img, borderSize, borderSize, imageWidth, imageHeight);
-        
-        // 绘制灰色描边
+
         ctx.strokeStyle = '#999999';
         ctx.lineWidth = strokeWidth;
         ctx.strokeRect(
-            borderSize - strokeWidth/2, 
+            borderSize - strokeWidth/2,
             borderSize - strokeWidth/2,
             imageWidth + strokeWidth,
             imageHeight + strokeWidth
         );
-        
-        // 在绘制文字部分添加字体加载检查
-        if (description) {
-        ctx.fillStyle = 'black';
-        const fontFamily = fontFamilySelect.value;
-        const fontSize = parseInt(document.getElementById('fontSize').value);
-        
-        const font = `${fontSize}px "${fontFamily}"`;
-        ctx.font = font;
-        
-        const textPadding = borderSize * 0.2;
-        const maxTextWidth = canvasWidth - (borderSize * 2 + textPadding * 2);
-        const textY = imageHeight + borderSize * 2;
-        
-        drawText(ctx, description, borderSize + textPadding, textY, maxTextWidth);
-    }
-}
 
-    // 图片导航
-    function showPreviousImage() {
-        if (currentImageIndex > 0) {
-            currentImageIndex--;
-            updateThumbnailSelection();
-            updatePreview();
-            updateNavigationButtons();
+        if (description) {
+            ctx.fillStyle = 'black';
+            const fontFamily = fontFamilySelect.value;
+            ctx.font = `${fontSize}px "${fontFamily}"`;
+            
+            const textPadding = borderSize * 0.2;
+            const maxTextWidth = canvasWidth - (borderSize * 2 + textPadding * 2);
+            const textY = imageHeight + borderSize * 2;
+            
+            drawText(ctx, description, borderSize + textPadding, textY, maxTextWidth);
         }
     }
-    
-    function showNextImage() {
-        if (currentImageIndex < images.length - 1) {
-            currentImageIndex++;
-            updateThumbnailSelection();
-            updatePreview();
-            updateNavigationButtons();
-        }
-    }
-    
-    function updateThumbnailSelection() {
-        document.querySelectorAll('.thumbnail').forEach((thumb, index) => {
-            thumb.classList.toggle('active', index === currentImageIndex);
-        });
-    }
-    
-    function updateNavigationButtons() {
-        prevButton.style.display = currentImageIndex === 0 ? 'none' : 'flex';
-        nextButton.style.display = currentImageIndex === images.length - 1 ? 'none' : 'flex';
-    }
-    
-    // 下载功能
-    function downloadCurrent() {
-        if (images.length === 0) {
-            showToast('请先添加图片');
-            return;
-        }
-        
-        const link = document.createElement('a');
-        const fileName = originalFileNames[currentImageIndex] || `photo_${currentImageIndex + 1}`;
-        link.download = `${fileName}_y.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        showToast('已下载当前图片');
-    }
-    
-    async function downloadAll() {
-        if (images.length === 0) {
-            showToast('请先添加图片');
-            return;
-        }
-    
-        showLoading();
-        const currentIdx = currentImageIndex;
-        
-        try {
-            for (let i = 0; i < images.length; i++) {
-                currentImageIndex = i;
-                updatePreview();
-                await new Promise(resolve => setTimeout(resolve, 100)); // 等待渲染
-                
-                const link = document.createElement('a');
-                const fileName = originalFileNames[i] || `photo_${i + 1}`;
-                link.download = `${fileName}_y.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            }
-            showToast(`已下载 ${images.length} 张图片`);
-        } catch (error) {
-            console.error('Error downloading images:', error);
-            showToast('下载过程中出现错误');
-        } finally {
-            currentImageIndex = currentIdx;
-            updatePreview();
-            hideLoading();
-        }
-    }
-    
-    // 文字绘制函数
+
     function drawText(ctx, text, x, y, maxWidth) {
         const lines = text.split('\n');
         const fontSize = parseInt(fontSizeSelect.value);
@@ -810,12 +673,146 @@
             ctx.fillText(line, xPos, y + (index * lineHeight));
         });
     }
-    
+
+    // 创建缩略图
+    function createThumbnail(image, index) {
+        const thumbnail = document.createElement('img');
+        thumbnail.classList.add('thumbnail');
+        thumbnail.src = image.src;
+        if (index === 0) thumbnail.classList.add('active');
+        
+        thumbnail.addEventListener('click', () => {
+            document.querySelectorAll('.thumbnail').forEach(thumb => thumb.classList.remove('active'));
+            thumbnail.classList.add('active');
+            currentImageIndex = index;
+            updatePreview();
+            updateNavigationButtons();
+        });
+        
+        thumbnailContainer.appendChild(thumbnail);
+    }
+
+    // 导航函数
+    function showPreviousImage() {
+        if (currentImageIndex > 0) {
+            currentImageIndex--;
+            updateThumbnailSelection();
+            updatePreview();
+            updateNavigationButtons();
+        }
+    }
+
+    function showNextImage() {
+        if (currentImageIndex < images.length - 1) {
+            currentImageIndex++;
+            updateThumbnailSelection();
+            updatePreview();
+            updateNavigationButtons();
+        }
+    }
+
+    function updateThumbnailSelection() {
+        document.querySelectorAll('.thumbnail').forEach((thumb, index) => {
+            thumb.classList.toggle('active', index === currentImageIndex);
+        });
+    }
+
+    function updateNavigationButtons() {
+        prevButton.style.display = currentImageIndex === 0 ? 'none' : 'flex';
+        nextButton.style.display = currentImageIndex === images.length - 1 ? 'none' : 'flex';
+    }
+
+    // 下载功能
+    function downloadCurrent() {
+        if (images.length === 0) {
+            showToast('请先添加图片');
+            return;
+        }
+        
+        const link = document.createElement('a');
+        const fileName = originalFileNames[currentImageIndex] || `photo_${currentImageIndex + 1}`;
+        link.download = `${fileName}_y.png`;
+        link.href = canvas.toDataURL('image/png', 1.0);
+        link.click();
+        showToast('已下载当前图片');
+    }
+
+    async function downloadAll() {
+        if (images.length === 0) {
+            showToast('请先添加图片');
+            return;
+        }
+
+        showLoading();
+        const currentIdx = currentImageIndex;
+        
+        try {
+            for (let i = 0; i < images.length; i++) {
+                currentImageIndex = i;
+                updatePreview();
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const link = document.createElement('a');
+                const fileName = originalFileNames[i] || `photo_${i + 1}`;
+                link.download = `${fileName}_y.png`;
+                link.href = canvas.toDataURL('image/png', 1.0);
+                link.click();
+            }
+            showToast(`已下载 ${images.length} 张图片`);
+        } catch (error) {
+            console.error('Error downloading images:', error);
+            showToast('下载过程中出现错误');
+        } finally {
+            currentImageIndex = currentIdx;
+            updatePreview();
+            hideLoading();
+        }
+    }
+
+    // 工具函数
+    function showLoading() {
+        loadingOverlay.style.display = 'flex';
+    }
+
+    function hideLoading() {
+        loadingOverlay.style.display = 'none';
+    }
+
+    function showToast(message, duration = 2000) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.style.display = 'block';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, duration);
+    }
+
+    // 事件监听器
+    imageInput.addEventListener('change', handleImageUpload);
+    downloadCurrentBtn.addEventListener('click', downloadCurrent);
+    downloadAllBtn.addEventListener('click', downloadAll);
+    photoDescription.addEventListener('input', updatePreview);
+    fontFamilySelect.addEventListener('change', function() {
+        setTimeout(updatePreview, 50);
+    });
+    fontSizeSelect.addEventListener('change', updatePreview);
+    document.getElementById('borderWidth').addEventListener('change', updatePreview);
+
+    // 对齐按钮事件监听
+    document.querySelectorAll('.align-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.align-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            textAlign = this.dataset.align;
+            updatePreview();
+        });
+    });
+
     // 初始化
     document.addEventListener('DOMContentLoaded', () => {
         loadFonts();
         updateNavigationButtons();
-    });    
+    });
 </script>
 </body>
 </html>
